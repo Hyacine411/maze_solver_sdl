@@ -101,3 +101,4 @@ Python 3	运行 maze_gen.py
     欢迎反馈 bug 或提出功能增强建议！
 
 © 2025 Chiharu280 — Maze Solver Project
+# maze_sdl
