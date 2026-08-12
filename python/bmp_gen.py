@@ -11,4 +11,4 @@ mouse.save("assets/mouse.bmp")
 cheese = Image.new("RGB", (16, 16), (255, 215, 0))
 cheese.save("assets/cheese.bmp")
 
-print("✅ BMP 图像已生成：assets/mouse.bmp 和 assets/cheese.bmp")
+print("BMP 图像已生成：assets/mouse.bmp 和 assets/cheese.bmp")
