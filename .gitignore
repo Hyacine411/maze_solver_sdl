@@ -4,3 +4,6 @@ build/
 *.o
 *.obj
 *.exe
+*.dll
+*.so
+.vscode/
