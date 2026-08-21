@@ -1,6 +1,0 @@
-{
-    "files.associations": {
-        "maze.h": "c"
-    },
-    "makefile.configureOnOpen": true
-}
