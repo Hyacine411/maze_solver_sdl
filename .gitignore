@@ -1,0 +1,6 @@
+maze_solver
+dist/
+build/
+*.o
+*.obj
+*.exe

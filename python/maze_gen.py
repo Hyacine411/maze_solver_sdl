@@ -49,9 +49,9 @@ def write_maze_to_file(maze, filepath):
                         row += ' ' if maze[y][x] == 0 else '#'
                 f.write(row + "\n")
 
-        print(f"✅ 迷宫已保存到 {filepath}（大小：{width}x{height}）")
+        print(f"迷宫已保存到 {filepath}（大小：{width}x{height}）")
     except Exception as e:
-        print(f"❌ 保存迷宫时出错: {e}")
+        print(f"保存迷宫时出错: {e}")
 
 if __name__ == "__main__":
     width, height = 91, 91  # 推荐奇数

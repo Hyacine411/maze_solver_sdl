@@ -1,5 +1,6 @@
 # === 通用部分（你原来就有）===
 CC      ?= gcc
+CFLAGS  ?= -std=c11 -Wall -Wextra -Wpedantic
 SRC_DIR := src
 INC_DIR := include
 SRCS    := $(wildcard $(SRC_DIR)/*.c)
@@ -10,7 +11,7 @@ SDL_FLAGS := `sdl2-config --cflags --libs`
 all: $(LINUX_TARGET)
 
 $(LINUX_TARGET): $(SRCS)
-	$(CC) $(SRCS) -I$(INC_DIR) -o $@ $(SDL_FLAGS)
+	$(CC) $(CFLAGS) $(SRCS) -I$(INC_DIR) -o $@ $(SDL_FLAGS)
 
 clean:
 	rm -f $(LINUX_TARGET) build/*.o dist/*
@@ -35,7 +36,7 @@ windows: $(WIN_TARGET)
 
 $(WIN_TARGET): $(SRCS)
 	mkdir -p dist
-	$(CC_WIN) $(SRCS) $(CFLAGS_WIN) -o $(WIN_TARGET) $(LDFLAGS_WIN)
+	$(CC_WIN) $(CFLAGS) $(SRCS) $(CFLAGS_WIN) -o $(WIN_TARGET) $(LDFLAGS_WIN)
 
 # 方便把运行时 DLL 与资源拷到发行目录
 package-win: windows

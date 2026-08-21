@@ -3,47 +3,40 @@
 #include "solver.h"
 #include "visualize.h"
 
-int main() {
+/*
+ * Application entry point.
+ *
+ * The program loads the maze model from disk, locates its validated start
+ * cell, obtains a shortest path with BFS, and hands the result to the SDL
+ * presentation layer.  Each stage returns a status so a failure is reported
+ * to the operating system instead of being silently ignored.
+ */
+int main(void) {
+    /* The loader also validates dimensions, row contents, and the S/E cells. */
     if (!load_maze_from_file("assets/maze.txt")) {
         return 1;
     }
 
-    // printf("原始迷宫:\n");
-    // print_maze();
-
-    int start_x = -1, start_y = -1;
-
-    // 寻找 S 起点
-    for (int i = 0; i < ROWS; i++) {
-        for (int j = 0; j < COLS; j++) {
-            if (maze[i][j] == 'S') {
-                start_x = j;
-                start_y = i;
-                break;
-            }
-        }
-    }
-
-    if (start_x == -1) {
+    /* Keep start discovery separate from file I/O for a reusable maze API. */
+    int start_x;
+    int start_y;
+    if (!find_maze_marker('S', &start_x, &start_y)) {
         printf("找不到起点 S\n");
         return 1;
     }
 
-    if (solve_maze(maze, start_x, start_y)) {
-        // printf("\n路径已找到,路径坐标如下（从终点到起点）:\n");
-        // for (int i = path_len - 1; i >= 0; i--) {
-            // printf("(%d, %d)\n", path_x[i], path_y[i]);
-        // }
-
-        // 动态可视化走迷宫
-        run_visualization(maze, path_x, path_y, path_len);
-
+    /*
+     * BFS returns the shortest route in reverse order: E first and S last.
+     * This ordering lets the renderer animate naturally by iterating backward.
+     */
+    if (solve_maze_bfs(maze, start_x, start_y)) {
+        if (!run_visualization(maze, path_x, path_y, path_len)) {
+            return 1;
+        }
     } else {
         printf("\n未找到路径。\n");
+        return 1;
     }
-
-    // printf("\n已找到路径,如下图:\n");
-    // print_maze();
 
     return 0;
 }
