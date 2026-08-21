@@ -1,104 +1,307 @@
-```Maze Solver — Mouse and Cheese  
+# Maze Solver 1.0 / 迷宫求解与可视化
 
-作者：Chiharu280
-版本：1.0
+[English](#english) | [中文](#中文)
 
-本项目使用 C 语言编写，实现了通过递归算法自动求解迷宫路径，并使用 SDL2 实现动态可视化展示。迷宫起点有一只老鼠，终点为奶酪，过程清晰可视，支持自定义迷宫大小。
+## 中文
 
----
+### 项目简介
 
-编译方法（Ubuntu）
+Maze Solver 是一个使用 **C 和 SDL2** 编写的迷宫求解与动画可视化项目。程序从文本文件加载迷宫，使用 **广度优先搜索（BFS）** 求出从老鼠起点到奶酪终点的最短路径，并在 SDL2 窗口中播放老鼠移动的过程。
 
-确保已安装 SDL2 开发库，终端运行下面的命令来安装或确认是否已安装：
+项目也保留了递归 **深度优先搜索（DFS）** 实现，便于后续进行算法对比。
 
-sudo apt install libsdl2-dev
+### 功能
 
-然后在项目根目录下执行：
+- 从文本文件加载并严格校验迷宫格式
+- 使用 BFS 求解四方向、无权迷宫的最短路径
+- 保留 DFS 求解器，供算法学习与比较使用
+- 使用 SDL2 绘制墙体、路径、老鼠和奶酪
+- 动画展示从起点到终点的移动过程
+- 在动画期间保持窗口关闭事件可响应
+- 使用 Python 随机生成新的完美迷宫
 
-gcc src/*.c -Iinclude -o maze_solver `sdl2-config --cflags --libs`
+### 项目结构
 
-进行编译
+| 路径 | 说明 |
+| --- | --- |
+| `src/main.c` | 程序入口：加载迷宫、调用 BFS、启动可视化 |
+| `src/maze.c` | 迷宫文件读取、格式校验和标记查找 |
+| `src/solver.c` | DFS、BFS 与路径记录逻辑 |
+| `src/visualize.c` | SDL2 窗口、纹理加载、渲染和动画 |
+| `include/` | 各模块的公共头文件 |
+| `assets/maze.txt` | 默认迷宫 |
+| `assets/mouse.bmp` | 老鼠贴图 |
+| `assets/cheese.bmp` | 奶酪贴图 |
+| `python/maze_gen.py` | 随机迷宫生成脚本 |
+| `Makefile` | Linux/WSL 构建与 Windows 交叉编译规则 |
 
-或者使用Makefile进行便捷编译
+### 依赖
 
+- C11 兼容编译器，例如 GCC
+- SDL2 开发库
+- Python 3（仅在需要生成新迷宫时使用）
+
+Ubuntu / Debian / WSL 可执行：
+
+```bash
+sudo apt install build-essential libsdl2-dev python3
+```
+
+### 构建与运行
+
+在项目根目录执行：
+
+```bash
 make
-
-调用Makefile文件进行快捷编译
-
-编译完成后，运行主程序：
-
 ./maze_solver
+```
 
-程序会：
+也可以直接使用 GCC：
 
-    从 assets/maze.txt 加载迷宫
+```bash
+gcc -std=c11 -Wall -Wextra -Wpedantic src/*.c -Iinclude \
+  $(sdl2-config --cflags --libs) -o maze_solver
+./maze_solver
+```
 
-    执行路径搜索（DFS）
+程序打开 SDL2 窗口后会播放求解动画；关闭窗口即可退出程序。
 
-    弹出 SDL2 窗口动态展示“老鼠走向奶酪”的过程
+### 从 Linux / WSL 交叉编译 Windows 版本
 
-关闭窗口后，终端将输出路径信息，并生成迷宫地图
+Makefile 保留了面向 **64 位 Windows** 的 MinGW-w64 交叉编译目标。先在 Ubuntu、Debian 或 WSL 中安装交叉编译器：
 
-运行完成后，也可以使用Makefile清除可执行文件
+```bash
+sudo apt install mingw-w64
+```
 
-make clean
+然后在项目根目录构建 Windows 可执行文件：
 
----
+```bash
+make windows
+```
 
-项目自带 Python 脚本自动生成复杂迷宫：
+生成结果为：
 
+```text
+dist/maze_solver.exe
+```
+
+若要同时复制 SDL2 运行时 DLL 和 `assets/` 资源目录，执行：
+
+```bash
+make package-win
+```
+
+完成后将整个 `dist/` 目录复制到 Windows 机器，并从该目录启动 `maze_solver.exe`。Makefile 默认使用 `x86_64-w64-mingw32-gcc` 和项目内的 `lib/x86_64-w64-mingw32` SDL2 开发包；若本地 SDL2 包路径不同，请先调整 `SDL2_WIN`。当前链接选项包含 `-mwindows`，因此 Windows 版本默认不显示控制台窗口。
+
+### 迷宫文件格式
+
+迷宫文件的第一行是：
+
+```text
+列数 行数
+```
+
+之后必须紧跟指定行数的迷宫内容。每一行必须恰好包含指定列数的字符，只允许使用：
+
+| 字符 | 含义 |
+| --- | --- |
+| `#` | 墙体，不可通行 |
+| 空格 | 通路 |
+| `S` | 起点，且必须唯一 |
+| `E` | 终点，且必须唯一 |
+
+一个 `5 × 3` 的示例：
+
+```text
+5 3
+#####
+#S E#
+#####
+```
+
+文件尺寸最大为 `100 × 100`。程序会拒绝尺寸错误、行长度错误、非法字符、多余迷宫数据，或缺少/重复 `S`、`E` 的文件。
+
+### 算法说明
+
+#### BFS（默认）
+
+`solve_maze_bfs()` 使用队列逐层搜索。对于本项目这种每步代价相同、只能上下左右移动的迷宫，BFS 保证返回最短路径。
+
+#### DFS（保留实现）
+
+`solve_maze()` 使用递归深度优先搜索和回溯。它可找到一条可行路径，但不保证路径最短。该实现主要用于算法对比与学习。
+
+两个求解器都会将路径记录在 `path_x`、`path_y` 和 `path_len` 中，顺序为“终点到起点”；可视化模块会反向读取，从起点播放至终点。
+
+### 生成新迷宫
+
+迷宫生成脚本只使用 Python 标准库。请进入 `python` 目录运行，使生成结果写入项目的 `assets/maze.txt`：
+
+```bash
+cd python
 python3 maze_gen.py
+cd ..
+```
 
-默认生成一个 71x71 的迷宫并保存为 assets/maze.txt。
+脚本默认生成 `91 × 91` 的随机完美迷宫。若需更改尺寸，可编辑 `python/maze_gen.py` 底部的 `width, height`；建议使用不大于 `100` 的奇数尺寸。
 
-你也可以自定义尺寸（建议奇数且小于100）：
+### 开发约定
 
-python3 maze_gen.py --width 51 --height 51
-
-    脚本会确保 S 起点 和 E 终点 已正确放置。
-
----
-
-目录结构说明
-目录   文件说明
-src/	所有 C 源码文件
-include/	头文件目录
-assets/maze.txt	当前加载的迷宫文件
-assets/mouse.bmp	起点图标（老鼠）
-assets/cheese.bmp	终点图标（奶酪）
-maze_gen.py	Python 迷宫生成器脚本
-README.md	项目说明文件
+- 源码使用 C11，并默认启用 `-Wall -Wextra -Wpedantic`。
+- BFS 不修改原始迷宫；SDL2 使用单独的路径覆盖层绘制动画。
+- SDL2 资源集中管理，初始化或贴图加载失败时会执行清理。
+- 修改后建议重新执行 `make` 并用默认迷宫做一次完整动画验证。
 
 ---
 
-功能特点
+## English
 
-    DFS 自动求解迷宫路径
+### Overview
 
-    支持任意大小迷宫（推荐奇数维度）
+Maze Solver is a **C and SDL2** project for solving and visualizing grid mazes. It loads a maze from a text file, uses **breadth-first search (BFS)** to find the shortest route from the mouse to the cheese, and animates that route in an SDL2 window.
 
-    SDL2 动态可视化老鼠路径演示
+A recursive **depth-first search (DFS)** implementation is also kept in the project for learning and algorithm comparison.
 
-    支持生成路径、路径坐标打印
+### Features
 
-    图标可替换，支持自定义 BMP 图
+- Strict text-maze loading and validation
+- Shortest-path BFS for four-direction, unweighted mazes
+- Retained DFS implementation for comparison
+- SDL2 rendering for walls, route, mouse, and cheese
+- Animated traversal from start to destination
+- Responsive close events during animation
+- Python-based random perfect-maze generator
 
----
+### Project layout
 
-依赖项
+| Path | Purpose |
+| --- | --- |
+| `src/main.c` | Entry point: load, solve with BFS, and visualize |
+| `src/maze.c` | Maze parsing, validation, and marker lookup |
+| `src/solver.c` | DFS, BFS, and path storage |
+| `src/visualize.c` | SDL2 setup, textures, rendering, and animation |
+| `include/` | Public module headers |
+| `assets/maze.txt` | Default maze |
+| `assets/mouse.bmp` | Mouse sprite |
+| `assets/cheese.bmp` | Cheese sprite |
+| `python/maze_gen.py` | Random maze generator |
+| `Makefile` | Linux/WSL build and Windows cross-build rules |
 
-名称	用途
-SDL2	动态绘制窗口
-Pillow	Python 生成 BMP 图
-Python 3	运行 maze_gen.py
+### Requirements
 
----
+- A C11-compatible compiler, such as GCC
+- SDL2 development files
+- Python 3, only when generating a new maze
 
-致谢 & 建议
+On Ubuntu, Debian, or WSL:
 
-    若使用非常大的迷宫（>200×200），建议使用非递归 DFS 或 BFS 改进求解效率。
+```bash
+sudo apt install build-essential libsdl2-dev python3
+```
 
-    欢迎反馈 bug 或提出功能增强建议！
+### Build and run
 
-© 2025 Chiharu280 — Maze Solver Project
-# maze_sdl
+From the project root:
+
+```bash
+make
+./maze_solver
+```
+
+Or compile directly:
+
+```bash
+gcc -std=c11 -Wall -Wextra -Wpedantic src/*.c -Iinclude \
+  $(sdl2-config --cflags --libs) -o maze_solver
+./maze_solver
+```
+
+The SDL2 window plays the solution animation. Close the window to exit.
+
+### Cross-compile a Windows build from Linux / WSL
+
+The Makefile retains a MinGW-w64 cross-compilation target for **64-bit Windows**. First install the cross-compiler on Ubuntu, Debian, or WSL:
+
+```bash
+sudo apt install mingw-w64
+```
+
+Then build the Windows executable from the project root:
+
+```bash
+make windows
+```
+
+The executable is written to:
+
+```text
+dist/maze_solver.exe
+```
+
+To also copy the SDL2 runtime DLL and the `assets/` directory, run:
+
+```bash
+make package-win
+```
+
+Copy the complete `dist/` directory to a Windows machine and launch `maze_solver.exe` from that directory. By default, the Makefile uses `x86_64-w64-mingw32-gcc` and the bundled SDL2 package at `lib/x86_64-w64-mingw32`. Update `SDL2_WIN` first if the local SDL2 package is stored elsewhere. The current link flags include `-mwindows`, so the Windows build does not open a console window by default.
+
+### Maze file format
+
+The first line contains:
+
+```text
+columns rows
+```
+
+It must be followed by exactly that many maze rows, each with exactly the declared number of characters. Valid cell characters are:
+
+| Character | Meaning |
+| --- | --- |
+| `#` | Wall; cannot be crossed |
+| Space | Open path |
+| `S` | Unique start cell |
+| `E` | Unique destination cell |
+
+Example, a `5 × 3` maze:
+
+```text
+5 3
+#####
+#S E#
+#####
+```
+
+The maximum supported size is `100 × 100`. Invalid dimensions, row lengths, cell characters, extra maze data, or missing/duplicate `S` and `E` markers are rejected.
+
+### Algorithms
+
+#### BFS (default)
+
+`solve_maze_bfs()` uses a queue to explore one distance layer at a time. For an unweighted maze with four-direction movement, it guarantees a shortest path.
+
+#### DFS (retained implementation)
+
+`solve_maze()` uses recursive depth-first search and backtracking. It can find a valid route, but it does not guarantee the shortest one. It is retained for study and comparison.
+
+Both solvers store coordinates in `path_x`, `path_y`, and `path_len`, ordered from destination to start. The renderer reads that sequence in reverse to animate from start to destination.
+
+### Generate a new maze
+
+The generator uses only Python's standard library. Run it from the `python` directory so that its output is written to the project's `assets/maze.txt`:
+
+```bash
+cd python
+python3 maze_gen.py
+cd ..
+```
+
+It generates a random `91 × 91` perfect maze by default. To use another size, edit `width, height` at the bottom of `python/maze_gen.py`; odd values no larger than `100` are recommended.
+
+### Development notes
+
+- The project targets C11 and enables `-Wall -Wextra -Wpedantic` by default.
+- BFS does not modify the original maze; SDL2 renders the route through a separate overlay.
+- SDL2 resources are centrally cleaned up if initialization or texture loading fails.
+- After a change, rebuild with `make` and run the default maze through a complete animation.
